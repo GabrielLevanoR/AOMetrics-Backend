@@ -37,8 +37,6 @@ const saveDeveloperNew = async (html) => {
         newReport.save((err) => {
           if (err) {
             console.log(`Failed Dev new ${chalk.red(newReport.id)}`);
-          } else {
-            console.log(`Saved Dev new ${chalk.green(newReport.id)}`);
           }
         });
       }

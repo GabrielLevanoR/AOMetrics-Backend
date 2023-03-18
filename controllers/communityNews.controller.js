@@ -37,8 +37,6 @@ const saveCommunityNew = async (html) => {
         newReport.save((err) => {
           if (err) {
             console.log(`Failed Comm New ${chalk.red(newReport.id)}`);
-          } else {
-            console.log(`Saved Comm New ${chalk.green(newReport.id)}`);
           }
         });
       }

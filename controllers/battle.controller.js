@@ -289,9 +289,7 @@ if (
           if (!savedBattle) {
             await saveBattle(battle.id, battle.server);
           } else {
-            BattleQueue.findOneAndRemove({ id: battle.id }).then(() => {
-              console.log(`Removed ${battle.id} from queue.`);
-            });
+            BattleQueue.findOneAndRemove({ id: battle.id }).then(() => {});
           }
         }
       })();
@@ -339,9 +337,6 @@ if (
         })();
         /**console.log(gathered); */
         offset += BATTLES_LIMIT;
-        if (offset > 200) {
-          console.log(`200 parse limit reached`);
-        }
       }
     } catch (err) {
       console.log(err.message);
@@ -376,7 +371,6 @@ if (
               if (queued) {
                 gathered += 1;
               } else {
-                console.log(`Battle ${chalk.green(battle.id)} added to queue`);
                 let newQueue = new BattleQueue({
                   id: battle.id,
                   server: "east",
@@ -386,11 +380,7 @@ if (
             }
           }
         })();
-        /** console.log(gathered); */
         offset += BATTLES_LIMIT;
-        if (offset > 200) {
-          console.log(`200 parse limit reached`);
-        }
       }
     } catch (err) {
       console.log(err.message);
