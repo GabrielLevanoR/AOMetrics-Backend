@@ -22,13 +22,11 @@ exports.getBattles = async (req, res) => {
     queryOptions.totalFame = { $gte: 1000000 };
   }
   if (query.search) {
-    queryOptions["$or"].push(
-      ...[
-        { "alliances.list": { $regex: query.search, $options: "-i" } },
-        { "guilds.list": { $regex: query.search, $options: "-i" } },
-        { "players.list": { $regex: query.search, $options: "-i" } },
-      ]
-    );
+    queryOptions["$or"] = [
+      { "alliances.list": { $regex: query.search, $options: "i" } },
+      { "guilds.list": { $regex: query.search, $options: "i" } },
+      { "players.list": { $regex: query.search, $options: "i" } },
+    ];
     if (!Number.isNaN(parseInt(query.search))) {
       queryOptions["$or"].push({ id: parseInt(query.search) });
     }
