@@ -45,32 +45,35 @@ exports.getDeathHistory = (history) => {
 };
 
 exports.getHistory = async (battle, url) => {
-  let moreHistory = true;
-  let offset = 0;
-  let battleHistory = [];
-  while (moreHistory) {
-    const { data } = await axios.get(
-      `${url}/${battle.id}?offset=${offset}&limit=51`,
-      {
-        timeout: 120000,
+  try {
+    let moreHistory = true;
+    let offset = 0;
+    let battleHistory = [];
+    while (moreHistory) {
+      const { data } = await axios.get(
+        `${url}/${battle.id}?offset=${offset}&limit=51`,
+        {
+          timeout: 120000,
+        }
+      );
+      if (data.length) {
+        data.forEach((element) => {
+          battleHistory.push(element);
+        });
+        offset = offset + 50;
+      } else {
+        moreHistory = false;
       }
-    );
-    if (data.length) {
-      data.forEach((element) => {
-        battleHistory.push(element);
-      });
-      offset = offset + 50;
-    } else {
-      moreHistory = false;
     }
+    battleHistory.sort((a, b) => a.TimeStamp - b.TimeStamp);
+    return battleHistory;
+  } catch (error) {
+    console.log(error);
   }
-  battleHistory.sort((a, b) => a.TimeStamp - b.TimeStamp);
-  return battleHistory;
 };
 
 exports.saveBattle = async (bid, server) => {
   try {
-    console.log(`${moment.utc()}: Gathering ${bid}`);
     let battle, serverURL;
     if (server === "west") {
       const response = await axios.get(`${BATTLE_WEST_ROOT_URL}/${bid}`);
@@ -112,9 +115,7 @@ exports.saveBattle = async (bid, server) => {
       if (err) {
         console.log(`Failed ${(chalk.red(battle.id), err)}`);
       } else {
-        BattleQueue.findOneAndRemove({ id: battle.id }).then(() => {
-          console.log(`Saved and Removed ${chalk.green(battle.id)}`);
-        });
+        BattleQueue.findOneAndRemove({ id: battle.id }).then(() => {});
       }
     });
     return newBattle;

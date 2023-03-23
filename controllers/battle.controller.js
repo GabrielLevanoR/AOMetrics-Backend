@@ -276,15 +276,35 @@ if (
   schedule.scheduleJob("* * * * *", async () => {
     try {
       let queued = await BattleQueue.find()
+        .where({ server: "west" })
         .sort({ date_created: -1 })
         .limit(500);
       await (async () => {
         for (let i = 0; i < queued.length; i++) {
           const battle = queued[i];
-          let savedBattle = await Battle.findOne({ id: battle.id }).select(
-            "id"
-          );
-          if (!savedBattle) {
+          let savedBattle = await Battle.find({ id: battle.id }).select("id");
+          if (!savedBattle.length) {
+            await saveBattle(battle.id, battle.server);
+          } else {
+            BattleQueue.findOneAndRemove({ id: battle.id }).then(() => {});
+          }
+        }
+      })();
+    } catch (error) {
+      console.log(error.message);
+    }
+  });
+  schedule.scheduleJob("* * * * *", async () => {
+    try {
+      let queued = await BattleQueue.find()
+        .where({ server: "east" })
+        .sort({ date_created: -1 })
+        .limit(500);
+      await (async () => {
+        for (let i = 0; i < queued.length; i++) {
+          const battle = queued[i];
+          let savedBattle = await Battle.find({ id: battle.id }).select("id");
+          if (!savedBattle.length) {
             await saveBattle(battle.id, battle.server);
           } else {
             BattleQueue.findOneAndRemove({ id: battle.id }).then(() => {});
@@ -299,43 +319,52 @@ if (
     try {
       let gathered = 0;
       let offset = 0;
+      let time = moment().unix();
+      const battleIds = [];
       while (gathered < 200) {
-        /**        console.log(
-          `Gathering west battles with offset: ${chalk.magenta(offset)}`
-        ); */
         const { data } = await axios.get(BATTLE_WEST_ROOT_URL, {
           params: {
             offset: offset,
             limit: 51,
             sort: BATTLES_SORT,
-            timestamp: moment().unix(),
+            timestamp: time,
           },
           timeout: 120000,
         });
-        await (async () => {
-          for (var i = 0; i < data.length; i++) {
-            let battle = data[i];
-            const parsed = await Battle.findOne({ id: battle.id });
-            if (parsed) {
-              gathered += 1;
-            } else {
-              const queued = await BattleQueue.findOne({ id: battle.id });
-              if (queued) {
-                gathered += 1;
-              } else {
-                console.log(`Battle ${chalk.green(battle.id)} added to queue`);
-                let newQueue = new BattleQueue({
-                  id: battle.id,
-                  server: "west",
-                });
-                await newQueue.save();
-              }
-            }
+        data.forEach((battle) => {
+          if (!battleIds.includes(battle.id)) {
+            battleIds.push(battle.id);
           }
-        })();
-        /**console.log(gathered); */
+        });
+
+        gathered += data.length;
         offset += BATTLES_LIMIT;
       }
+      await (async () => {
+        const [existingBattles, queuedBattles] = await Promise.all([
+          Battle.find({ id: { $in: battleIds } }),
+          BattleQueue.find({ id: { $in: battleIds } }),
+        ]);
+        const existingBattleIds = new Set(
+          existingBattles.map((battle) => battle.id)
+        );
+        const queuedBattleIds = new Set(
+          queuedBattles.map((battle) => battle.id)
+        );
+
+        const newBattles = [];
+        battleIds.forEach((battleId) => {
+          if (
+            !existingBattleIds.has(battleId) &&
+            !queuedBattleIds.has(battleId)
+          ) {
+            newBattles.push({ id: battleId, server: "west" });
+          }
+        });
+        if (newBattles.length) {
+          await BattleQueue.insertMany(newBattles);
+        }
+      })();
     } catch (err) {
       console.log(err.message);
     }
@@ -345,41 +374,51 @@ if (
     try {
       let gathered = 0;
       let offset = 0;
+      let time = moment().unix();
+      const battleIds = [];
       while (gathered < 200) {
-        /**        console.log(
-          `Gathering east battles with offset: ${chalk.magenta(offset)}`
-        ); */
         const { data } = await axios.get(BATTLE_EAST_ROOT_URL, {
           params: {
             offset: offset,
             limit: 51,
             sort: BATTLES_SORT,
-            timestamp: moment().unix(),
+            timestamp: time,
           },
           timeout: 120000,
         });
-        await (async () => {
-          for (var i = 0; i < data.length; i++) {
-            let battle = data[i];
-            const parsed = await Battle.findOne({ id: battle.id });
-            if (parsed) {
-              gathered += 1;
-            } else {
-              const queued = await BattleQueue.findOne({ id: battle.id });
-              if (queued) {
-                gathered += 1;
-              } else {
-                let newQueue = new BattleQueue({
-                  id: battle.id,
-                  server: "east",
-                });
-                await newQueue.save();
-              }
-            }
+        data.forEach((battle) => {
+          if (!battleIds.includes(battle.id)) {
+            battleIds.push(battle.id);
           }
-        })();
+        });
+        gathered += data.length;
         offset += BATTLES_LIMIT;
       }
+      await (async () => {
+        const [existingBattles, queuedBattles] = await Promise.all([
+          Battle.find({ id: { $in: battleIds } }),
+          BattleQueue.find({ id: { $in: battleIds } }),
+        ]);
+        const existingBattleIds = new Set(
+          existingBattles.map((battle) => battle.id)
+        );
+        const queuedBattleIds = new Set(
+          queuedBattles.map((battle) => battle.id)
+        );
+
+        const newBattles = [];
+        battleIds.forEach((battleId) => {
+          if (
+            !existingBattleIds.has(battleId) &&
+            !queuedBattleIds.has(battleId)
+          ) {
+            newBattles.push({ id: battleId, server: "east" });
+          }
+        });
+        if (newBattles.length) {
+          await BattleQueue.insertMany(newBattles);
+        }
+      })();
     } catch (err) {
       console.log(err.message);
     }
