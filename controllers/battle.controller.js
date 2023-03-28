@@ -93,18 +93,26 @@ exports.getMultiLog = async (req, res) => {
   try {
     const ids = req.params.ids.split(",");
     let main = null;
+    let validIds = [];
     let battles = [];
     await (async function () {
-      for (var i = 0; i < ids.length; i++) {
+      for (let i = 0; i < ids.length; i++) {
         const battleID = ids[i].trim();
         const battle = await Battle.findOne({ id: battleID }).select(
           "-history"
         );
         if (battle !== null) {
+          validIds.push(ids[i]);
           if (i === 0) {
-            main = battle;
+            main = { ...battle._doc };
           } else {
             battles.push(battle);
+            if (!(main < battle.startTime)) {
+              main.startTime = battle.startTime;
+            }
+            if (!(main > battle.startTime)) {
+              main.endTime = battle.endTime;
+            }
           }
         }
       }
@@ -159,7 +167,6 @@ exports.getMultiLog = async (req, res) => {
       });
 
       b.guilds.guilds.forEach((g) => {
-        console.log(g);
         if (combinedguilds[g.id]) {
           combinedguilds[g.id].count += 1;
           combinedguilds[g.id].kills += g.kills;
@@ -227,7 +234,6 @@ exports.getMultiLog = async (req, res) => {
     main.alliances.alliances = [];
     main.guilds.guilds = [];
     main.players.players = [];
-
     Object.keys(combinedplayers).forEach((pid) => {
       combinedplayers[pid].ip = Math.round(
         combinedplayers[pid].ip / combinedplayers[pid].count
@@ -257,8 +263,8 @@ exports.getMultiLog = async (req, res) => {
       );
       main.guilds.guilds.push(combinedguilds[gid]);
     });
-
     main.totalPlayers = main.players.players.length;
+    main.id = validIds;
     return res.status(200).json(main);
   } catch (err) {
     return res.status(500).json({ message: err.message });
