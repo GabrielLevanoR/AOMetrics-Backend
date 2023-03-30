@@ -32,11 +32,13 @@ exports.getDeathHistory = (history) => {
         name: element.Killer.Name,
         allianceName: element.Killer.AllianceName,
         guildName: element.Killer.GuildName,
+        equipment: element.Killer.Equipment,
       },
       victim: {
         name: element.Victim.Name,
         allianceName: element.Victim.AllianceName,
         guildName: element.Victim.GuildName,
+        equipment: element.Victim.Equipment,
       },
     });
   });

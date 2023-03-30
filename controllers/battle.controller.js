@@ -77,7 +77,7 @@ exports.getTopFameBattles = async (req, res) => {
 exports.getBattle = async (req, res) => {
   try {
     const battleID = req.params.id;
-    const battleDB = await Battle.findOne({ id: battleID }).select("-history");
+    const battleDB = await Battle.findOne({ id: battleID });
     if (battleDB !== null) {
       return res.status(200).json(battleDB);
     } else {
@@ -98,9 +98,7 @@ exports.getMultiLog = async (req, res) => {
     await (async function () {
       for (let i = 0; i < ids.length; i++) {
         const battleID = ids[i].trim();
-        const battle = await Battle.findOne({ id: battleID }).select(
-          "-history"
-        );
+        const battle = await Battle.findOne({ id: battleID });
         if (battle !== null) {
           validIds.push(ids[i]);
           if (i === 0) {
@@ -148,6 +146,7 @@ exports.getMultiLog = async (req, res) => {
     });
 
     battles.forEach((b) => {
+      main.history = [...main.history, ...b.history];
       main.totalKills += b.totalKills;
       main.totalFame += b.totalFame;
       b.alliances.alliances.forEach((a) => {
