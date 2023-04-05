@@ -2,7 +2,7 @@ require("dotenv").config();
 const chalk = require("chalk");
 const db = require("./util/db");
 const app = require("./api.routes");
-const { getAlbionItems } = require("./util/items");
+const { getAlbionItems, generateTypeItems } = require("./util/items");
 
 db(process.env.MONGO_URI);
 
@@ -16,6 +16,6 @@ try {
   console.log(error);
 } finally {
   if (process.env.NODE_ENV === "GENERATE_ITEMS") {
-    getAlbionItems();
+    generateTypeItems();
   }
 }

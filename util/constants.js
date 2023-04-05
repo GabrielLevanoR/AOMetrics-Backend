@@ -9,4 +9,5 @@ module.exports = {
     "https://gameinfo-sgp.albiononline.com/api/gameinfo/events/battle",
   COMMUNITY_NEWS_URL: "https://albiononline.com/community_news",
   DEVELOPER_NEWS_URL: "https://albiononline.com/developer_news",
+  ITEM_DATA: "https://gameinfo.albiononline.com/api/gameinfo/items/", // /data
 };

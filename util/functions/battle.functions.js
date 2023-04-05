@@ -1,7 +1,9 @@
-const chalk = require("chalk");
+//const chalk = require("chalk");
 const axios = require("axios");
 const Battle = require("../../models/battle.model");
 const BattleQueue = require("../../models/battleQueue.model");
+const TopGuilds = require("../../models/topGuilds");
+
 const moment = require("moment");
 
 const { formatAlliances } = require("../functions/alliance.functions");
@@ -20,6 +22,7 @@ const {
   BATTLE_WEST_HISTORY_URL,
   BATTLE_EAST_HISTORY_URL,
 } = require("../constants");
+const mongoose = require("mongoose");
 
 exports.getDeathHistory = (history) => {
   let deathHistory = [];
@@ -113,15 +116,73 @@ exports.saveBattle = async (bid, server) => {
 
     let newBattle = new Battle(battle);
 
-    newBattle.save((err) => {
+    await newBattle.save(async (err) => {
       if (err) {
-        console.log(`Failed ${(chalk.red(battle.id), err)}`);
+        if (err.code === 11000) {
+          BattleQueue.findOneAndRemove({ id: battle.id });
+        }
       } else {
-        BattleQueue.findOneAndRemove({ id: battle.id }).then(() => {});
+        if (battle.totalFame > 200000 && battle.players.players.length > 30) {
+          const now = new Date();
+          const halfHourAgo = new Date(now - 30 * 60 * 1000);
+          for (const guild of guilds.guilds) {
+            if (guild.totalPlayers > 10) {
+              const topGuild = await TopGuilds.findOne({ id: guild.id });
+              if (topGuild && topGuild.updatedAt < halfHourAgo) {
+                const { totalFame } = topGuild;
+                await TopGuilds.findOneAndUpdate(
+                  { id: guild.id },
+                  {
+                    $set: {
+                      oldTotalFame: totalFame,
+                      updatedAt: now,
+                    },
+                    $inc: {
+                      totalKills: guild.kills,
+                      totalFame: guild.killFame,
+                      totalDeaths: guild.deaths,
+                      totalBattles: 1,
+                    },
+                    $push: {
+                      battles: battle.id,
+                    },
+                  },
+                  { upsert: true }
+                );
+              } else {
+                await TopGuilds.findOneAndUpdate(
+                  { id: guild.id },
+                  {
+                    $setOnInsert: {
+                      name: guild.name,
+                      alliance: guild.alliance,
+                      allianceId: guild.allianceId,
+                      oldTotalFame: 0,
+                    },
+                    $inc: {
+                      totalKills: guild.kills,
+                      totalFame: guild.killFame,
+                      totalDeaths: guild.deaths,
+                      totalBattles: 1,
+                    },
+                    $set: {
+                      updatedAt: now,
+                    },
+                    $push: {
+                      battles: battle.id,
+                    },
+                  },
+                  { upsert: true }
+                );
+              }
+            }
+          }
+        }
+        BattleQueue.findOneAndRemove({ id: battle.id });
       }
     });
     return newBattle;
   } catch (err) {
-    console.log(err.message);
+    console.log(err);
   }
 };
