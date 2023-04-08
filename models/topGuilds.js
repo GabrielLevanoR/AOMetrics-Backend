@@ -14,6 +14,7 @@ const topGuildsSchema = Schema(
     totalDeaths: { type: Number },
     totalBattles: { type: Number },
     battles: { type: Array, default: [] },
+    server: { type: String, index: true },
     updatedAt: { type: Date },
   },
   { minimize: false }

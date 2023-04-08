@@ -6,7 +6,8 @@
   "license": "MIT",
   "scripts": {
     "start": "node index",
-    "dev": "nodemon index"
+    "dev": "nodemon index",
+    "party-composition": "node ./util/partyComposition.js"
   },
   "dependencies": {
     "axios": "^0.20.0",

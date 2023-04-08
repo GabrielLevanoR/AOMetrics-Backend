@@ -124,17 +124,14 @@ exports.saveBattle = async (bid, server) => {
       } else {
         if (battle.totalFame > 200000 && battle.players.players.length > 30) {
           const now = new Date();
-          const halfHourAgo = new Date(now - 30 * 60 * 1000);
           for (const guild of guilds.guilds) {
-            if (guild.totalPlayers > 10) {
+            if (guild.totalPlayers > 15) {
               const topGuild = await TopGuilds.findOne({ id: guild.id });
-              if (topGuild && topGuild.updatedAt < halfHourAgo) {
-                const { totalFame } = topGuild;
+              if (topGuild) {
                 await TopGuilds.findOneAndUpdate(
                   { id: guild.id },
                   {
                     $set: {
-                      oldTotalFame: totalFame,
                       updatedAt: now,
                     },
                     $inc: {
@@ -142,6 +139,7 @@ exports.saveBattle = async (bid, server) => {
                       totalFame: guild.killFame,
                       totalDeaths: guild.deaths,
                       totalBattles: 1,
+                      oldTotalFame: guild.killFame,
                     },
                     $push: {
                       battles: battle.id,
@@ -158,8 +156,7 @@ exports.saveBattle = async (bid, server) => {
                       alliance: guild.alliance,
                       allianceId: guild.allianceId,
                       oldTotalFame: 0,
-                    },
-                    $inc: {
+                      server: server,
                       totalKills: guild.kills,
                       totalFame: guild.killFame,
                       totalDeaths: guild.deaths,

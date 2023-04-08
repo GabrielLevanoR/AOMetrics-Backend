@@ -11,7 +11,7 @@ const DeveloperNew = require("../models/developerNews.model");
 const saveDeveloperNew = async (html) => {
   let news = [];
   const $ = cheerio.load(html);
-  $("a").each(async (i, el) => {
+  $("a").each((i, el) => {
     const date = $(el).find(".news-item__meta .news-item__date").text();
     const title = $(el).find(".news-item__headline").text();
     const imageUrl = $(el)
@@ -29,11 +29,11 @@ const saveDeveloperNew = async (html) => {
       date: date,
     });
   });
-  await news.forEach(async (elem) => {
+  for (const elem in news) {
     try {
-      const alreadyNew = await DeveloperNew.findOne({ id: elem.id });
+      const alreadyNew = await DeveloperNew.findOne({ id: news[elem].id });
       if (!alreadyNew) {
-        let newReport = new DeveloperNew(elem);
+        let newReport = new DeveloperNew(news[elem]);
         newReport.save((err) => {
           if (err) {
             console.log(`Failed Dev new ${chalk.red(newReport.id)}`);
@@ -43,7 +43,7 @@ const saveDeveloperNew = async (html) => {
     } catch (error) {
       console.log(error);
     }
-  });
+  }
 };
 
 exports.getNews = async (req, res) => {
@@ -57,24 +57,28 @@ exports.getNews = async (req, res) => {
     return res.status(500).json({ message: error.message });
   }
 };
-
-schedule.scheduleJob("*/2 * * * *", async () => {
-  try {
-    let page = 1;
-    let amount = 6;
-    await (async () => {
-      const { data } = await axios.get(
-        DEVELOPER_NEWS_URL + `/${page}/${amount}`,
-        {
-          timeout: 120000,
-        }
-      );
-      await saveDeveloperNew(data);
-    })();
-  } catch (error) {
-    console.log(error);
-  }
-});
+if (
+  process.env.NODE_ENV !== "dev" &&
+  process.env.NODE_ENV !== "GENERATE_ITEMS"
+) {
+  schedule.scheduleJob("*/2 * * * *", async () => {
+    try {
+      let page = 1;
+      let amount = 6;
+      await (async () => {
+        const { data } = await axios.get(
+          DEVELOPER_NEWS_URL + `/${page}/${amount}`,
+          {
+            timeout: 120000,
+          }
+        );
+        await saveDeveloperNew(data);
+      })();
+    } catch (error) {
+      console.log(error);
+    }
+  });
+}
 
 schedule.scheduleJob("0 * * * *", async () => {
   DeveloperNew.countDocuments({}, (err, count) => {
